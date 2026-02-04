@@ -2,21 +2,27 @@
 <html lang="fa">
 <head>
 <meta charset="UTF-8">
-<title>صرافی BTC</title>
+<title>صرافی کریپتو</title>
 <style>
 body {margin:0;font-family:Arial,sans-serif;background:#020617;color:white;}
 .topbar {position:fixed;top:0;left:0;width:100%;padding:40px 20px 10px 20px;background:#020617;border-bottom:1px solid #1e293b;font-size:18px;font-weight:bold;z-index:999;}
 #tomanTop {color:#22c55e;font-size:20px;}
-.main {display:flex;justify-content:center;align-items:center;height:100vh;}
-.coin-btn {padding:14px 30px;border:none;border-radius:10px;background:#f59e0b;font-size:18px;font-weight:bold;cursor:pointer;}
 
-/* مودال */
+.main {display:flex;justify-content:center;align-items:center;height:100vh;}
+.coin-btn {padding:14px 30px;border:none;border-radius:10px;background:#f59e0b;font-size:18px;font-weight:bold;cursor:pointer;margin:10px;}
+
 .modal {display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);justify-content:center;align-items:center;z-index:500;}
 .modal-content {width:380px;background:#020617;padding:20px;border-radius:12px;position:relative;text-align:center;}
 .close-btn {position:absolute;top:8px;left:10px;cursor:pointer;font-size:18px;}
 
-/* دکمه ها */
-#spinnerBtn,#codeBtn,#historyBtn,#resetBtn {position:fixed;right:20px;width:50px;height:50px;border-radius:50%;border:none;cursor:pointer;z-index:1000;font-size:12px;color:white;font-weight:bold;}
+button.trade {padding:8px 16px;margin:5px;border-radius:6px;font-weight:bold;cursor:pointer;border:none;}
+button.buy{background:#22c55e;color:black;}
+button.sell{background:#ef4444;color:white;}
+
+#spinnerBtn,#codeBtn,#historyBtn,#resetBtn {
+position:fixed;right:20px;width:50px;height:50px;border-radius:50%;
+border:none;cursor:pointer;z-index:1000;font-size:12px;color:white;font-weight:bold;
+}
 #spinnerBtn{top:30px;background:#f59e0b;font-size:22px;}
 #codeBtn{top:100px;background:#0ea5e9;}
 #historyBtn{top:170px;background:#9333ea;}
@@ -24,27 +30,38 @@ body {margin:0;font-family:Arial,sans-serif;background:#020617;color:white;}
 
 #wheelContainer {position:relative;width:300px;height:300px;margin:20px auto;}
 #wheelCanvas {background:#020617;border-radius:50%;display:block;}
-button.trade {padding:8px 16px;margin:5px;border-radius:6px;font-weight:bold;cursor:pointer;border:none;}
-button.buy{background:#22c55e;color:black;}
-button.sell{background:#ef4444;color:white;}
+
+#loginModal .modal-content{width:300px;}
+#usernameInput{width:90%;padding:8px;margin-top:10px;border-radius:6px;border:none;}
+#loginModal button{margin-top:10px;padding:8px 16px;border:none;border-radius:8px;background:#22c55e;font-weight:bold;}
 </style>
 </head>
 <body>
 
-<div class="topbar">💰 <span id="tomanTop">0</span></div>
-
-<div class="main">
-  <button class="coin-btn" onclick="openBTC()">🪙 BTC</button>
+<!-- مودال ورود -->
+<div class="modal" id="loginModal" style="display:flex;">
+  <div class="modal-content">
+    <h2>👤 ورود</h2>
+    <input type="text" id="usernameInput" placeholder="نام کاربری">
+    <button onclick="login()">ورود</button>
+  </div>
 </div>
 
-<!-- مودال BTC -->
-<div class="modal" id="btcModal">
+<div class="topbar">💰 <span id="usernameDisplay"></span> | <span id="tomanTop">0</span> تومان</div>
+
+<div class="main">
+  <button class="coin-btn" onclick="openCoin('BTC')">🪙 BTC</button>
+  <button class="coin-btn" onclick="openCoin('NOT')">🪙 NOT</button>
+</div>
+
+<!-- مودال ارز -->
+<div class="modal" id="coinModal">
   <div class="modal-content">
-    <div class="close-btn" onclick="closeBTC()">✖</div>
-    <h2>💱 BTC</h2>
-    <div class="price"><span id="price">0</span> تومان</div>
-    <div class="wallet">دارایی: <span id="btc">0</span> BTC</div>
-    <input type="number" id="amount" placeholder="مقدار BTC" min="0.01" step="0.01">
+    <div class="close-btn" onclick="closeCoin()">✖</div>
+    <h2 id="coinTitle">💱 BTC</h2>
+    <div class="price">قیمت: <span id="price">0</span> تومان</div>
+    <div class="wallet">دارایی: <span id="balance">0</span></div>
+    <input type="number" id="amount" placeholder="مقدار" min="0.01" step="0.01">
     <div style="display:flex;justify-content:space-between;">
       <button class="trade buy" onclick="buy()">خرید</button>
       <button class="trade sell" onclick="sell()">فروش</button>
@@ -67,169 +84,181 @@ button.sell{background:#ef4444;color:white;}
       <canvas id="wheelCanvas" width="300" height="300"></canvas>
     </div>
     <button onclick="spinWheel()">چرخش</button>
-    <p id="rewardText" style="font-size:24px;color:#22c55e;margin-top:10px;"></p>
-  </div>
-</div>
-
-<!-- مودال کد جایزه -->
-<div class="modal" id="codeModal">
-  <div class="modal-content">
-    <div class="close-btn" onclick="closeCodeModal()">✖</div>
-    <h2>🎁 کد جایزه</h2>
-    <input type="text" id="rewardCode" placeholder="کد را وارد کنید" style="padding:8px;width:90%;border-radius:6px;border:none;margin-top:10px;">
-    <button onclick="checkCode()" style="margin-top:10px;padding:8px 16px;border:none;border-radius:8px;background:#22c55e;font-weight:bold;">تایید</button>
-    <p id="codeMessage" style="margin-top:10px;font-size:20px;"></p>
-  </div>
-</div>
-
-<!-- مودال تاریخچه -->
-<div class="modal" id="historyModal">
-  <div class="modal-content">
-    <div class="close-btn" onclick="closeHistory()">✖</div>
-    <h2>📜 تاریخچه معاملات</h2>
-    <div id="historyList" style="text-align:right;max-height:200px;overflow:auto;margin-top:10px;"></div>
-  </div>
-</div>
-
-<!-- مودال حذف اکانت -->
-<div class="modal" id="resetModal">
-  <div class="modal-content">
-    <div class="close-btn" onclick="closeResetModal()">✖</div>
-    <h2>⚠️ پاک کردن اکانت</h2>
-    <p>آیا مطمئن هستید؟ همه چیز پاک می‌شود!</p>
-    <button onclick="resetAccount()" style="margin-top:10px;padding:8px 16px;border:none;border-radius:8px;background:#ef4444;color:white;font-weight:bold;">پاک کردن</button>
+    <p id="rewardText" style="font-size:22px;margin-top:10px;"></p>
   </div>
 </div>
 
 <script>
-let price=50;
-let toman=parseInt(localStorage.getItem("toman"))||0;
-let btc=parseFloat(localStorage.getItem("btc"))||0;
-let history=JSON.parse(localStorage.getItem("history"))||[];
-let usedCodes=JSON.parse(localStorage.getItem("usedCodes"))||{};
+let toman=parseInt(localStorage.getItem("toman"))||5000;
+let username=localStorage.getItem("username")||"";
 
-// 💰 فرمت سه رقم
+let coins={
+ BTC:{price:50,balance:parseFloat(localStorage.getItem("btc"))||0},
+ NOT:{price:1000,balance:parseFloat(localStorage.getItem("notc"))||0}
+};
+let currentCoin="BTC";
+
+// ذخیره آخرین روز گردونه ✅
+let lastSpinDate = localStorage.getItem("lastSpinDate") || "";
+
+// فرمت پول
 function formatMoney(num){return Math.floor(num).toString().replace(/\B(?=(\d{3})+(?!\d))/g,",");}
-function saveStorage(){ 
-  localStorage.setItem("toman",toman); 
-  localStorage.setItem("btc",btc);
-  localStorage.setItem("history",JSON.stringify(history));
-  localStorage.setItem("usedCodes",JSON.stringify(usedCodes));
+
+function saveStorage(){
+ localStorage.setItem("toman",toman);
+ localStorage.setItem("btc",coins.BTC.balance);
+ localStorage.setItem("notc",coins.NOT.balance);
 }
-function updateUI(){ 
-  document.getElementById("price").innerText=formatMoney(price); 
-  document.getElementById("btc").innerText=btc.toFixed(8); 
-  document.getElementById("tomanTop").innerText=formatMoney(toman);
+
+function updateUI(){
+ let c=coins[currentCoin];
+ document.getElementById("price").innerText=formatMoney(c.price);
+ document.getElementById("balance").innerText=c.balance.toFixed(6);
+ document.getElementById("tomanTop").innerText=formatMoney(toman);
+ document.getElementById("usernameDisplay").innerText=username;
+ document.getElementById("coinTitle").innerText="💱 "+currentCoin;
 }
+
+// ورود
+function login(){
+ let input=document.getElementById("usernameInput").value.trim();
+ if(!input) return alert("نام کاربری وارد کنید");
+ username=input;
+ localStorage.setItem("username",username);
+ document.getElementById("loginModal").style.display="none";
+ updateUI();
+}
+
+function openCoin(name){
+ currentCoin=name;
+ document.getElementById("coinModal").style.display="flex";
+ updateUI();
+}
+function closeCoin(){document.getElementById("coinModal").style.display="none";}
 
 // خرید
-function buy(){ 
-  let amount=parseFloat(document.getElementById("amount").value);
-  if(!amount||amount<=0) return alert("عدد معتبر نیست");
-  let cost=amount*price;
-  if(toman<cost) return alert("پول کافی نیست");
-  toman-=cost; toman=Math.floor(toman);
-  btc+=amount; btc=parseFloat(btc.toFixed(8));
-  history.unshift("خرید "+amount+" BTC به قیمت "+formatMoney(cost)+" تومان");
-  saveStorage(); updateUI(); document.getElementById("amount").value="";
+function buy(){
+ let amount=parseFloat(document.getElementById("amount").value);
+ if(!amount||amount<=0) return alert("عدد معتبر نیست");
+ let c=coins[currentCoin];
+ let cost=amount*c.price;
+ if(toman<cost) return alert("پول کافی نیست");
+ toman-=cost;
+ c.balance+=amount;
+ saveStorage();updateUI();
 }
 
 // فروش
 function sell(){
-  let amount=parseFloat(document.getElementById("amount").value);
-  if(!amount||amount<=0) return alert("عدد معتبر نیست");
-  if(btc<amount) return alert("BTC کافی نیست");
-  btc-=amount; btc=parseFloat(btc.toFixed(8));
-  let gain=amount*price; toman+=gain; toman=Math.floor(toman);
-  history.unshift("فروش "+amount+" BTC به قیمت "+formatMoney(gain)+" تومان");
-  saveStorage(); updateUI(); document.getElementById("amount").value="";
+ let amount=parseFloat(document.getElementById("amount").value);
+ if(!amount||amount<=0) return alert("عدد معتبر نیست");
+ let c=coins[currentCoin];
+ if(c.balance<amount) return alert("دارایی کافی نیست");
+ c.balance-=amount;
+ toman+=amount*c.price;
+ saveStorage();updateUI();
 }
 
-// مودال‌ها
-function openBTC(){document.getElementById("btcModal").style.display="flex";}
-function closeBTC(){document.getElementById("btcModal").style.display="none";}
-
-// قیمت تصادفی بدون تکرار
-let priceList=[10,20,30,40,50,60,70,80,90,100,150,200];
-let lastPrice=parseInt(localStorage.getItem("lastPrice"))||50; price=lastPrice;
+// تغییر قیمت
 setInterval(()=>{
-  let newPrice;
-  do{newPrice=priceList[Math.floor(Math.random()*priceList.length)];}while(newPrice===lastPrice);
-  price=newPrice; lastPrice=newPrice; localStorage.setItem("lastPrice",lastPrice); updateUI();
-},100);
+ Object.keys(coins).forEach(name=>{
+   let change=Math.floor(Math.random()*60)-30;
+   coins[name].price+=change;
+   if(coins[name].price<1) coins[name].price=1;
+ });
+ updateUI();
+},300);
 
-// گردونه
-const spinnerBtn=document.getElementById("spinnerBtn"); const spinnerModal=document.getElementById("spinnerModal"); const rewardText=document.getElementById("rewardText");
-spinnerBtn.addEventListener("click",()=>{rewardText.innerText=""; spinnerModal.style.display="flex";});
+// گردونه 🎡
+const spinnerBtn=document.getElementById("spinnerBtn");
+const spinnerModal=document.getElementById("spinnerModal");
+const rewardText=document.getElementById("rewardText");
+
+spinnerBtn.onclick=()=>{rewardText.innerText="";spinnerModal.style.display="flex";};
 function closeSpinner(){spinnerModal.style.display="none";}
-spinnerModal.addEventListener("click",e=>{if(e.target===spinnerModal) closeSpinner();});
-const canvas=document.getElementById("wheelCanvas"); const ctx=canvas.getContext("2d");
-const rewards=[500,200,100,50,10,1]; const colors=["#f87171","#fbbf24","#34d399","#60a5fa","#a78bfa","#f472b6"];
-const n=rewards.length; const radius=canvas.width/2; let currentRotation=0; let spinning=false;
+
+const canvas=document.getElementById("wheelCanvas");
+const ctx=canvas.getContext("2d");
+const rewards=[500,200,100,50,10,1];
+const colors=["#f87171","#fbbf24","#34d399","#60a5fa","#a78bfa","#f472b6"];
+const n=rewards.length;
+const radius=canvas.width/2;
+let currentRotation=0;
+let spinning=false;
+
 function drawWheel(rotation=0){
-  ctx.clearRect(0,0,canvas.width,canvas.height);
-  for(let i=0;i<n;i++){
-    const start=(i/n)*2*Math.PI+rotation;
-    const end=((i+1)/n)*2*Math.PI+rotation;
-    const mid=(start+end)/2;
-    ctx.beginPath(); ctx.moveTo(radius,radius); ctx.arc(radius,radius,radius,start,end); ctx.closePath(); ctx.fillStyle=colors[i]; ctx.fill();
-    ctx.save(); ctx.translate(radius,radius); ctx.rotate(mid); ctx.fillStyle="black"; ctx.font="bold 16px Arial"; ctx.textAlign="center"; ctx.textBaseline="middle";
-    ctx.fillText(rewards[i]+" تومان",radius*0.6,0); ctx.restore();
-  }
+ ctx.clearRect(0,0,canvas.width,canvas.height);
+ for(let i=0;i<n;i++){
+   const start=(i/n)*2*Math.PI+rotation;
+   const end=((i+1)/n)*2*Math.PI+rotation;
+   const mid=(start+end)/2;
+   ctx.beginPath();
+   ctx.moveTo(radius,radius);
+   ctx.arc(radius,radius,radius,start,end);
+   ctx.closePath();
+   ctx.fillStyle=colors[i];
+   ctx.fill();
+   ctx.save();
+   ctx.translate(radius,radius);
+   ctx.rotate(mid);
+   ctx.fillStyle="black";
+   ctx.font="bold 16px Arial";
+   ctx.textAlign="center";
+   ctx.textBaseline="middle";
+   ctx.fillText(rewards[i]+" تومان",radius*0.6,0);
+   ctx.restore();
+ }
 }
 drawWheel();
+
 function spinWheel(){
-  if(spinning) return; spinning=true;
-  const segmentAngle=2*Math.PI/n;
-  const randomIndex=Math.floor(Math.random()*n);
-  const randomOffset=Math.random()*segmentAngle;
-  const finalRotation=5*2*Math.PI+randomIndex*segmentAngle+randomOffset;
-  const duration=4000; const start=performance.now(); const startRotation=currentRotation;
-  function animate(time){
-    const elapsed=time-start; const t=Math.min(elapsed/duration,1); const ease=1-Math.pow(1-t,3);
-    currentRotation=startRotation+(finalRotation-startRotation)*ease;
-    drawWheel(currentRotation);
-    if(t<1) requestAnimationFrame(animate);
-    else{
-      let normalizedRotation=(currentRotation+Math.PI/2)%(2*Math.PI);
-      if(normalizedRotation<0) normalizedRotation+=2*Math.PI;
-      let landedIndex=n-Math.floor(normalizedRotation/segmentAngle); landedIndex%=n;
-      const won=rewards[landedIndex];
-      rewardText.innerText="💰 +"+won+" تومان"; toman+=won; toman=Math.floor(toman); saveStorage(); updateUI(); spinning=false;
-    }
-  }
-  requestAnimationFrame(animate);
+ const today = new Date().toDateString(); // تاریخ امروز ✅
+
+ if(lastSpinDate === today){
+   rewardText.innerText = "⛔ امروز گردونه را زده‌ای!";
+   rewardText.style.color = "red";
+   return;
+ }
+
+ if(spinning) return;
+ spinning=true;
+
+ const segmentAngle=2*Math.PI/n;
+ const randomIndex=Math.floor(Math.random()*n);
+ const finalRotation=5*2*Math.PI+randomIndex*segmentAngle;
+ const duration=3000;
+ const start=performance.now();
+ const startRotation=currentRotation;
+
+ function animate(time){
+   const t=Math.min((time-start)/duration,1);
+   const ease=1-Math.pow(1-t,3);
+   currentRotation=startRotation+(finalRotation-startRotation)*ease;
+   drawWheel(currentRotation);
+   if(t<1){
+     requestAnimationFrame(animate);
+   }else{
+     const win=rewards[randomIndex];
+     toman+=win;
+     rewardText.innerText="🎉 برنده شدی: "+win+" تومان";
+     rewardText.style.color="#22c55e";
+     
+     lastSpinDate = today; // ذخیره روز آخر ✅
+     localStorage.setItem("lastSpinDate", today);
+
+     saveStorage();
+     updateUI();
+     spinning=false;
+   }
+ }
+ requestAnimationFrame(animate);
 }
 
-// تاریخچه
-function openHistory(){const list=document.getElementById("historyList");
-  if(history.length===0){list.innerHTML="<p>هیچ معامله‌ای انجام نشده</p>";}else{list.innerHTML=history.map(item=>"<p>• "+item+"</p>").join("");}
-  document.getElementById("historyModal").style.display="flex";
+// ورود خودکار
+if(username){
+ document.getElementById("loginModal").style.display="none";
+ updateUI();
 }
-function closeHistory(){document.getElementById("historyModal").style.display="none";}
-
-// کد جایزه
-function openCodeModal(){document.getElementById("codeModal").style.display="flex";}
-function closeCodeModal(){document.getElementById("codeModal").style.display="none";}
-function checkCode(){
-  const code=document.getElementById("rewardCode").value.trim(); const msg=document.getElementById("codeMessage");
-  if(usedCodes[code]){msg.innerText="کد قبلاً استفاده شده"; msg.style.color="orange"; return;}
-  if(code==="Rolweri"){btc+=50; btc=parseFloat(btc.toFixed(8)); usedCodes[code]=true; saveStorage(); updateUI(); msg.innerText="جایزه داده شد"; msg.style.color="#22c55e";}
-  else if(code==="TNT100"){toman+=2000; toman=Math.floor(toman); usedCodes[code]=true; saveStorage(); updateUI(); msg.innerText="جایزه داده شد"; msg.style.color="#22c55e";}
-  else {msg.innerText="کد اشتباه است"; msg.style.color="red";}
-}
-
-// حذف اکانت
-function openResetModal(){document.getElementById("resetModal").style.display="flex";}
-function closeResetModal(){document.getElementById("resetModal").style.display="none";}
-function resetAccount(){
-  const savedCodes=JSON.stringify(usedCodes);
-  localStorage.clear();
-  localStorage.setItem("usedCodes",savedCodes);
-  location.reload();
-}
-
-updateUI();
 </script>
 </body>
-</html>
+  </html>
